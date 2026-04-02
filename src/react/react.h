@@ -12,7 +12,7 @@ class ReactClass
 {
 public:
     explicit ReactClass();
-    ERR_TYPE_commonErr_E  init();
+    ERR_TYPE_commonErr_E init();
     void zbusMsgEventHandler(bool isHigh);
 
 private:

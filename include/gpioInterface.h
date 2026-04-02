@@ -1,5 +1,6 @@
 #pragma once
 
+#include "errTypes.h"
 /**
  * @file gpioInterface.h
  * @brief Hardware GPIO abstractions.
@@ -51,14 +52,14 @@ struct GpioInterface_GpioStateCallback
 class GpioInterface_GpioInput {
 
 public:
-    virtual ~GpioInput() = default;
+    virtual ~GpioInterface_GpioInput() = default;
     /**
      * @brief   Configure the pin as input pull-up and register an edge callback.
      *
      * @param   cb  Invoked from work-queue context on every logical state change.
      * @return  ERR_TYPES_commonErr_OK on success, ERR_TYPES_commonErr_FAIL on failure.
      */
-    virtual ERR_TYPE_commonErr_E configure(GpioStateCallback cb) = 0;
+    virtual ERR_TYPE_commonErr_E configure(GpioInterface_GpioStateCallback cb) = 0;
     /**
      * @brief   Read the current logical state of the input pin.
      * @return  TRUE if the pin is logically high, FALSE if low.
@@ -75,7 +76,7 @@ public:
 class GpioInterface_GpioOutput { 
 
 public:
-    virtual ~GpioOutput() = default;
+    virtual ~GpioInterface_GpioOutput() = default;
     /**
      * @brief   Configure the pin as a push-pull digital output.
      * @return  ERR_TYPES_commonErr_OK on success, ERR_TYPES_commonErr_FAIL on failure.
