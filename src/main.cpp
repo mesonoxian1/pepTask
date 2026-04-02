@@ -6,8 +6,13 @@
 #include <zephyr/drivers/gpio/gpio_emul.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/zbus/zbus.h>
+#include "gpioZephyr.h"
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
+
+// extern declarations for the device tree specs defined in gpioZephyr.cpp
+extern const gpio_dt_spec buttonSpec;
+extern const gpio_dt_spec ledSpec;
 
 /**
  * @brief ZBus channel carrying GpioStateMsg state change notifications.
@@ -33,27 +38,6 @@ ZBUS_CHAN_DEFINE(
     ZBUS_OBSERVERS_EMPTY,
     ZBUS_MSG_INIT(.isHigh = false)
 );
-
-/**
- * @brief GPIO spec for the input button resolved from the device tree.
- *
- * @details Populated at compile time from the @c button0 node defined in
- *          boards/native_sim.overlay. Contains the GPIO device pointer,
- *          pin number, and flags (GPIO_ACTIVE_LOW | GPIO_PULL_UP).
- */
-static const gpio_dt_spec btnSpec =
-    GPIO_DT_SPEC_GET(DT_NODELABEL(button0), gpios);
-
-/**
- * @brief GPIO spec for the output LED resolved from the device tree.
- *
- * @details Populated at compile time from the @c led0 node defined in
- *          boards/native_sim.overlay. Contains the GPIO device pointer,
- *          pin number, and flags (GPIO_ACTIVE_HIGH).
- */
-static const gpio_dt_spec ledSpec =
-    GPIO_DT_SPEC_GET(DT_NODELABEL(led0), gpios);
-
 
 int main(void)
 {

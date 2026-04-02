@@ -78,10 +78,10 @@ ERR_TYPE_commonErr_E ReactClass::init() {
 
     if (obs_ret != 0) {
         LOG_ERR("zbus_chan_add_obs failed: %d", obs_ret);
-        success = ERR_TYPES_commonErr_FAIL;
+        success = ERR_TYPE_commonErr_FAIL;
     } else {
         LOG_INF("ReactClass init OK, observer registered");
-        success = ERR_TYPES_commonErr_OK;
+        success = ERR_TYPE_commonErr_OK;
     }
 
    return success;
