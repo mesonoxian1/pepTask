@@ -1,5 +1,6 @@
 #pragma once
 
+#include "errTypes.h"
 #include <zephyr/kernel.h>
 
 /**
@@ -11,7 +12,7 @@ class ReactClass
 {
 public:
     explicit ReactClass();
-    int  init();
+    ERR_TYPE_commonErr_E  init();
     void zbusMsgEventHandler(bool isHigh);
 
 private:

@@ -5,7 +5,7 @@ ReadClass::ReadClass() {
     
 }
 
-int ReadClass::init() {
+ERR_TYPE_commonErr_E ReadClass::init() {
 
 }
 

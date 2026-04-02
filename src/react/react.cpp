@@ -4,7 +4,7 @@ ReactClass::ReactClass() {
     
 }
 
-int ReactClass::init() {
+ERR_TYPE_commonErr_E ReactClass::init() {
    
 }
 

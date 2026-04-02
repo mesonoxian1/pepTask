@@ -1,5 +1,6 @@
 #pragma once
 
+#include "errTypes.h"
 #include <zephyr/kernel.h>
 
 /**
@@ -11,7 +12,7 @@ class ReadClass
 {
 public:
     explicit ReadClass();
-    int init();
+    ERR_TYPE_commonErr_E init();
 
 private:
     static constexpr int32_t kDebounceMs{20};
