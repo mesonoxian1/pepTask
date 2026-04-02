@@ -22,5 +22,5 @@ private:
 
     static void gpioCallback(void *ctx, bool isHigh);
     static void workHandler(k_work *work);
-    void        process();
+    void process();
 };

@@ -15,11 +15,11 @@ ReadClass::ReadClass() {
 /**
  * @brief   Initialise the ReadClass and configure the GPIO input.
  *
- * @return  ERR_TYPES_commonErr_OK on success, ERR_TYPES_commonErr_FAIL on failure.
+ * @return  ERR_TYPE_commonErr_OK on success, ERR_TYPE_commonErr_FAIL on failure.
  */
 ERR_TYPE_commonErr_E ReadClass::init() {
 
-    return ERR_TYPES_commonErr_OK;
+    return ERR_TYPE_commonErr_OK;
 }
 
 /**
@@ -35,7 +35,7 @@ ERR_TYPE_commonErr_E ReadClass::init() {
  * @param ctx     Pointer to the owning ReadClass instance.
  * @param isHigh  Current logical pin state (unused).
  */
-static void ReadClass::gpioCallback(void *ctx, bool isHigh) {
+void ReadClass::gpioCallback(void *ctx, bool isHigh) {
 
     (void) isHigh;
 
@@ -51,7 +51,7 @@ static void ReadClass::gpioCallback(void *ctx, bool isHigh) {
  *
  * @param work  Pointer to the embedded k_work inside dwork_.
  */
-static void ReadClass::workHandler(k_work *work) {
+void ReadClass::workHandler(k_work *work) {
 
     k_work_delayable *dw   = CONTAINER_OF(work, k_work_delayable, work);
     ReadClass        *self = CONTAINER_OF(dw, ReadClass, dwork_);

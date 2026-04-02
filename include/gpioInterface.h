@@ -12,8 +12,7 @@
  * @details Wraps a plain function pointer and a context pointer to avoid
  *          any dependency on std::function or the heap.
  */
-struct GpioInterface_GpioStateCallback
-{
+struct GpioInterface_GpioStateCallback {
     /**
      * @brief Function to invoke on GPIO state change.
      *
