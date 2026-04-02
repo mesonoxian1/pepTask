@@ -11,7 +11,7 @@
  */
 
 //! Payload published on GPIO state change
-struct zbusTopics_gpioStateMsg {
+struct ZBusTopics_gpioStateMsg {
     bool isHigh; //!< State of the input pin - TRUE - HIGH, FALSE - LOW
 };
 
