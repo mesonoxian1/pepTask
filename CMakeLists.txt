@@ -5,5 +5,14 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 message(STATUS "Zephyr base: ${ZEPHYR_BASE}")
 project(app)
 
-# Add your source files
-target_sources(app PRIVATE src/main.cpp)
+# Source files
+target_sources(app PRIVATE 
+        src/main.cpp 
+        src/read/read.cpp 
+        )
+
+# Header files
+target_include_directories(app PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/read  
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/react 
+        )
