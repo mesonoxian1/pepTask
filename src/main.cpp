@@ -114,49 +114,75 @@ public:
     ERR_TYPE_commonErr_E configure(GpioInterface_GpioStateCallback cb) override {
 
         ERR_TYPE_commonErr_E err = ERR_TYPE_commonErr_OK;
+        int ret = 0;
         userCb_ = cb;
 
-        if (device_is_ready(spec_.port) == false) {
+        if(device_is_ready(spec_.port) == false) {
             LOG_ERR("GPIO input device not ready");
             err = ERR_TYPE_commonErr_FAIL; 
         }
 
-        int ret = gpio_pin_configure_dt(&spec_, GPIO_INPUT | GPIO_PULL_UP);
-       
-        if (ret != 0) { 
-            err = ERR_TYPE_commonErr_FAIL; 
+        if(err == ERR_TYPE_commonErr_OK) {
+            ret = gpio_pin_configure_dt(&spec_, GPIO_INPUT | GPIO_PULL_UP);
+        
+            if(ret != 0) { 
+                err = ERR_TYPE_commonErr_FAIL; 
+            }
         }
 
-        gpio_init_callback(&ctx_.cbData, isrHandler, BIT(spec_.pin));
-        ret = gpio_add_callback(spec_.port, &ctx_.cbData);
-   
-        if (ret != 0) {
-            err = ERR_TYPE_commonErr_FAIL; 
+        if(err == ERR_TYPE_commonErr_OK) {
+            gpio_init_callback(&ctx_.cbData, isrHandler, BIT(spec_.pin));
+            ret = gpio_add_callback(spec_.port, &ctx_.cbData);
+    
+            if(ret != 0) {
+                err = ERR_TYPE_commonErr_FAIL; 
+            }
         }
 
-        gpio_pin_interrupt_configure_dt(&spec_, GPIO_INT_EDGE_BOTH);
+        if(err == ERR_TYPE_commonErr_OK) {
+            gpio_pin_interrupt_configure_dt(&spec_, GPIO_INT_EDGE_BOTH);
+        }
 
         return err;
     }
 
-    bool readPin() const override
-    {
+    bool readPin() const override {
+
         const bool state = gpio_pin_get_dt(&spec_) > 0;
         LOG_INF("Input GPIO state -> %s", state ? "HIGH" : "LOW");
         return state;
     }
 
 private:
-    const gpio_dt_spec &spec_;
-    GpioIsrCtx          ctx_{};
-    GpioInterface_GpioStateCallback   userCb_{};
-
+    const gpio_dt_spec &spec_;  //!< Device tree GPIO spec for this input pin
+    GpioIsrCtx          ctx_{}; //!< ISR context — holds callback, self pointer and work item
+    GpioInterface_GpioStateCallback userCb_{}; //!< User callback invoked on every stable edge
+    
+    /*!
+     * @brief   Static ISR handler — submits isrWork to exit ISR context immediately.
+     *
+     * @details Called by the Zephyr GPIO driver on every edge (state change). cbData is the 
+     *          first member of GpioIsrCtx so the struct pointer can be recovered via a
+     *          direct cast.
+     *
+     * @param   dev     GPIO device pointer (unused).
+     * @param   cb      Pointer to the embedded gpio_callback inside GpioIsrCtx.
+     * @param   pins    Bitmask of triggered pins (unused).
+     */
     static void isrHandler(const struct device *, struct gpio_callback *cb, uint32_t pins) {
 
         GpioIsrCtx *ctx = reinterpret_cast<GpioIsrCtx *>(cb);
         k_work_submit(&ctx->isrWork);
     }
-
+    /*!
+     * @brief   Static work-queue thunk — recovers instance and invokes user callback.
+     *
+     * @details Called in system work-queue context after the ISR submits isrWork.
+     *          Recovers the ZephyrGpioInput instance via GpioIsrCtx::self and
+     *          invokes the registered GpioStateCallback with the current pin state.
+     *
+     * @param   w   Pointer to the embedded k_work inside GpioIsrCtx.
+     */
     static void workThunk(k_work *w) {
 
         GpioIsrCtx      *ctx  = CONTAINER_OF(w, GpioIsrCtx, isrWork);
@@ -171,15 +197,24 @@ private:
  * @details Wraps the Zephyr GPIO driver API to configure a physical pin as
  *          push-pull output and drive it to a logical level.
  */
-class ZephyrGpioOutput : public GpioInterface_GpioOutput
-{
+class ZephyrGpioOutput : public GpioInterface_GpioOutput {
+
 public:
-    explicit ZephyrGpioOutput(const gpio_dt_spec &spec) : spec_{spec} {
+    /*!
+     * @brief   Construct from a device-tree GPIO spec.
+     *
+     * @param   spec    GPIO spec obtained via GPIO_DT_SPEC_GET().
+     */
+    explicit ZephyrGpioOutput(const gpio_dt_spec &spec) : spec_{spec} {}
+    
+    /*!
+     * @brief   Configure the pin as a push-pull digital output, initially inactive.
+     *
+     * @return  ERR_TYPE_commonErr_OK on success, ERR_TYPE_commonErr_FAIL if the
+     *          GPIO device is not ready.
+     */
+    ERR_TYPE_commonErr_E configure() override {
 
-    }
-
-    ERR_TYPE_commonErr_E configure() override
-    {
         ERR_TYPE_commonErr_E err = ERR_TYPE_commonErr_OK;
 
         if(device_is_ready(spec_.port) == false) {
@@ -187,18 +222,26 @@ public:
             err = ERR_TYPE_commonErr_FAIL;
         }
 
-        gpio_pin_configure_dt(&spec_, GPIO_OUTPUT_INACTIVE);
+        if(err == ERR_TYPE_commonErr_OK) {
+            gpio_pin_configure_dt(&spec_, GPIO_OUTPUT_INACTIVE);
+        }
+        
         return err;
     }
 
-    void setPin(bool state) override
-    {
+    /*!
+     * @brief   Drive the output pin to a logical level.
+     *
+     * @param   state   true = high (LED on), false = low (LED off).
+     */
+    void setPin(bool state) override {
+
         gpio_pin_set_dt(&spec_, state ? 1 : 0);
         LOG_INF("LED GPIO control -> %s", state ? "ON" : "OFF");
     }
 
 private:
-    const gpio_dt_spec &spec_;
+    const gpio_dt_spec &spec_; //!< Device tree GPIO spec for this output pin
 };
 
 #if(SIMULATION_THREAD_ENABLED == true) 
