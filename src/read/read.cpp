@@ -52,6 +52,7 @@ void ReadClass::gpioCallback(void *ctx, bool isHigh) {
     (void) isHigh;
 
     auto *self = static_cast<ReadClass *>(ctx);
+    // debounce is acchieved using a reschedule - take an actual reading later
     k_work_reschedule(&self->dwork_, K_MSEC(kDebounceMs));
 }
 

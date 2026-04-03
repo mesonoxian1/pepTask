@@ -9,6 +9,8 @@
  * @brief ReadClass — GPIO input sensing with debounce and ZBus publish.
  */
 
+#define DEBOUNCE_TOUT_MS    (20) //!< Debounce timeout for the button
+
 class ReadClass
 {
 public:
@@ -16,7 +18,7 @@ public:
     ERR_TYPE_commonErr_E init();
 
 private:
-    static constexpr int32_t kDebounceMs {20};
+    static constexpr int32_t kDebounceMs {DEBOUNCE_TOUT_MS};
 
     GpioInterface_GpioInput &gpio_;
     k_work_delayable dwork_;
