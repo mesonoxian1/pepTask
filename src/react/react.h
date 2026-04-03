@@ -1,6 +1,7 @@
 #pragma once
 
 #include "errTypes.h"
+#include "gpioInterface.h"
 #include <zephyr/kernel.h>
 
 /**
@@ -11,7 +12,7 @@
 class ReactClass
 {
 public:
-    explicit ReactClass();
+    explicit ReactClass(GpioInterface_GpioOutput &gpio);
     ERR_TYPE_commonErr_E init();
     void zbusMsgEventHandler(bool isHigh);
 
@@ -20,6 +21,7 @@ private:
     static constexpr int32_t kLowOnMs{500};
     static constexpr int     kBlinkToggleCount{6};
 
+    GpioInterface_GpioOutput &gpio_;
     k_work_delayable dwork_;
     bool             currentState_{false};
     int              blinkCount_{0};

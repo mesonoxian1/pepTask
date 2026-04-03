@@ -1,6 +1,7 @@
 #pragma once
 
 #include "errTypes.h"
+#include "gpioInterface.h"
 #include <zephyr/kernel.h>
 
 /**
@@ -11,12 +12,13 @@
 class ReadClass
 {
 public:
-    explicit ReadClass();
+    explicit ReadClass(GpioInterface_GpioInput &gpio);
     ERR_TYPE_commonErr_E init();
 
 private:
-    static constexpr int32_t kDebounceMs{20};
+    static constexpr int32_t kDebounceMs {20};
 
+    GpioInterface_GpioInput &gpio_;
     k_work_delayable dwork_;
     bool             lastState_{false};
 

@@ -40,18 +40,13 @@ void zbusListenerCb(const struct zbus_channel *chan)
 
 /**
  * @brief   Defines the ZBus listener observer for the ReactClass.
- *
- * @details Creates a static zbus_observer struct named react_listener with
- *          zbusListenerCb as the callback. Must be in the same translation
- *          unit as ZBUS_CHAN_ADD_OBS or registered via zbus_chan_add_obs()
- *          at runtime to ensure correct linker section population.
  */
-ZBUS_LISTENER_DEFINE(react_listener, zbusListenerCb);
+ZBUS_OBS_DECLARE(react_listener);
 
 /**
  * @brief Construct a ReactClass and initialise the delayable work item.
  */
-ReactClass::ReactClass() {
+ReactClass::ReactClass(GpioInterface_GpioOutput &gpio) : gpio_{gpio} {
 
     k_work_init_delayable(&dwork_, workHandler);
 }

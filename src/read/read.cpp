@@ -7,7 +7,7 @@
 /**
  * @brief Construct a ReadClass and initialise the delayable work item.
  */
-ReadClass::ReadClass() { 
+ReadClass::ReadClass(GpioInterface_GpioInput &gpio) : gpio_{gpio} { 
     // init dwork with workHandler
      k_work_init_delayable(&dwork_, workHandler);
 }
