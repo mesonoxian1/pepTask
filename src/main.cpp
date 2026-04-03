@@ -101,7 +101,7 @@ public:
     bool readPin() const override
     {
         const bool state = gpio_pin_get_dt(&spec_) > 0;
-        LOG_INF("readPin() -> %s", state ? "HIGH" : "LOW");
+        LOG_INF("Input GPIO state -> %s", state ? "HIGH" : "LOW");
         return state;
     }
 
@@ -147,12 +147,42 @@ public:
     void setPin(bool state) override
     {
         gpio_pin_set_dt(&spec_, state ? 1 : 0);
-        LOG_INF("LED -> %s", state ? "ON" : "OFF");
+        LOG_INF("LED GPIO control -> %s", state ? "ON" : "OFF");
     }
 
 private:
     const gpio_dt_spec &spec_;
 };
+
+
+/* ---------------------------------------------------------------------------
+ * Simulation thread
+ *
+ * gpio_emul_input_set sets RAW electrical level.
+ * Button is GPIO_ACTIVE_LOW so:
+ *   raw 0 -> logical HIGH (button pressed)
+ *   raw 1 -> logical LOW  (button released)
+ * -------------------------------------------------------------------------- */
+ 
+static void simThread(void *, void *, void *)
+{
+    k_sleep(K_SECONDS(1));
+    
+    // simulate input button
+    for(; ; ) {
+        LOG_INF("--- Button PRESS (logical HIGH) ---");
+        gpio_emul_input_set(btnSpec.port, btnSpec.pin, 0);
+        // delay for 3 s
+        k_sleep(K_SECONDS(3));
+ 
+        LOG_INF("--- Button RELEASE (logical LOW) ---");
+        gpio_emul_input_set(btnSpec.port, btnSpec.pin, 1);
+        // delay for 3 s
+        k_sleep(K_SECONDS(3));
+    }
+}
+ 
+K_THREAD_DEFINE(sim_tid, 1024, simThread, NULL, NULL, NULL, 5, 0, 0);
 
 /* ---------------------------------------------------------------------------
  * Application objects
@@ -172,5 +202,16 @@ int main(void) {
     ERR_TYPE_commonErr_E err = ERR_TYPE_commonErr_OK;
     LOG_INF("Starting... ");
 
-    return 0;
+    if (readObj.init() != ERR_TYPE_commonErr_OK) {
+        LOG_ERR("ReadClass::init failed");
+        err = ERR_TYPE_commonErr_FAIL;
+    }
+ 
+    if (reactObj.init() != ERR_TYPE_commonErr_OK) {
+        LOG_ERR("ReactClass::init failed");
+        err = ERR_TYPE_commonErr_FAIL;
+    }
+ 
+    LOG_INF("Init complete — waiting for GPIO events");
+    return err;
 }

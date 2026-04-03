@@ -4,6 +4,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/zbus/zbus.h>
 
+LOG_MODULE_REGISTER(read_class, LOG_LEVEL_DBG);
+
 /**
  * @brief Construct a ReadClass and initialise the delayable work item.
  */
@@ -18,6 +20,16 @@ ReadClass::ReadClass(GpioInterface_GpioInput &gpio) : gpio_{gpio} {
  * @return  ERR_TYPE_commonErr_OK on success, ERR_TYPE_commonErr_FAIL on failure.
  */
 ERR_TYPE_commonErr_E ReadClass::init() {
+
+    GpioInterface_GpioStateCallback cb{};
+    cb.func = &ReadClass::gpioCallback;
+    cb.ctx  = this;
+
+    const int ret = gpio_.configure(cb);
+
+    if (ret != 0) {
+        LOG_ERR("IGpioInput::configure failed: %d", ret);
+    }
 
     return ERR_TYPE_commonErr_OK;
 }
@@ -67,7 +79,24 @@ void ReadClass::workHandler(k_work *work) {
  */
 void ReadClass::process() {
     
-    const ZBusTopics_gpioStateMsg msg { .isHigh = 0 };
-    // publish the state change
-    const int ret = zbus_chan_pub(&gpio_state_chan, &msg, K_NO_WAIT);
+    int ret;
+    const bool state = gpio_.readPin();
+    const ZBusTopics_gpioStateMsg msg { 
+        .isHigh = state 
+    };
+
+    if (state != lastState_) {
+        // store the state for the next state change check
+        lastState_ = state;
+    
+        LOG_INF("GPIO input: %s", state ? "HIGH" : "LOW");
+        // publish the state change
+        ret = zbus_chan_pub(&gpio_state_chan, &msg, K_NO_WAIT);
+        
+        LOG_INF("zbus_chan_pub ret = %d, isHigh = %d", ret, state);
+        
+        if (ret != 0) {
+            LOG_ERR("zbus_chan_pub failed: %d", ret);
+        }
+    }
 }

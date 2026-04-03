@@ -8,6 +8,12 @@
  * @file react.h
  * @brief ReactClass — LED output control driven by ZBus GPIO state messages.
  */
+ 
+//! LED state enumeration
+typedef enum REACT_ledState_ENUM {
+    REACT_ledState_OFF = 0, //!< LED state OFF
+    REACT_ledState_ON,      //!< LED state ON
+} REACT_ledState_E;
 
 class ReactClass
 {
@@ -24,6 +30,7 @@ private:
     GpioInterface_GpioOutput &gpio_;
     k_work_delayable dwork_;
     bool             currentState_{false};
+    REACT_ledState_E previousLedState{REACT_ledState_OFF};
     int              blinkCount_{0};
 
     static void workHandler(k_work *work);
