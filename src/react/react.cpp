@@ -64,29 +64,30 @@ ReactClass::ReactClass(GpioInterface_GpioOutput &gpio) : gpio_{gpio} {
 ERR_TYPE_commonErr_E ReactClass::init() {
 
     reactInstance = this;
-    ERR_TYPE_commonErr_E success;
+    ERR_TYPE_commonErr_E err = ERR_TYPE_commonErr_OK;
 
     const int ret = gpio_.configure();
 
-    if (ret != 0) {
+    if(ret != 0) {
         LOG_ERR("IGpioOutput::configure failed: %d", ret);
-        success = ERR_TYPE_commonErr_FAIL;
+        err = ERR_TYPE_commonErr_FAIL;
     }
     /*
      * Register observer at runtime — avoids linker iterable section issues
      * when ZBUS_CHAN_DEFINE and ZBUS_CHAN_ADD_OBS are in different TUs. 
      */
     const int obsRet = zbus_chan_add_obs(&gpio_state_chan, &react_listener, K_NO_WAIT);
-
-    if (obsRet != 0) {
-        LOG_ERR("zbus_chan_add_obs failed: %d", obsRet);
-        success = ERR_TYPE_commonErr_FAIL;
-    } else {
-        LOG_INF("ReactClass init OK, observer registered");
-        success = ERR_TYPE_commonErr_OK;
+    if(err == ERR_TYPE_commonErr_OK) {
+        if(obsRet != 0) {
+            LOG_ERR("zbus_chan_add_obs failed: %d", obsRet);
+            err = ERR_TYPE_commonErr_FAIL;
+        } else {
+            LOG_INF("ReactClass init OK, observer registered");
+            err = ERR_TYPE_commonErr_OK;
+        }
     }
 
-   return success;
+   return err;
 }
 
 /**
@@ -126,6 +127,7 @@ void ReactClass::process() {
 
     // in case GPIO is set to HIGH - blink the LED 3 times with 100ms between each blink
     if(currentState_ == true) {
+        // only enter three-blink sequence once
         if(blinkCount_ > 0) {
             blinkCount_--;
             LOG_DBG("Blink: LED %s (%d left)", (previousLedState == REACT_ledState_OFF) ? "ON" : "OFF", blinkCount_);
@@ -139,10 +141,7 @@ void ReactClass::process() {
             }
 
             k_work_reschedule(&dwork_, K_MSEC(kBlinkPeriodMs));
-        } else {
-            gpio_.setPin(false);
-            previousLedState = REACT_ledState_OFF;
-        }
+        } 
     } else {
         // otherwise if the state is low, turn the LED on and keep it on for 500ms.
         if(previousLedState == REACT_ledState_OFF) {

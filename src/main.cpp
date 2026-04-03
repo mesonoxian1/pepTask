@@ -9,8 +9,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/zbus/zbus.h>
 
-#define SIMULATION_THREAD_ENABLED   (FALSE)
-
+#define SIMULATION_THREAD_ENABLED   (TRUE)
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
@@ -156,7 +155,7 @@ private:
     const gpio_dt_spec &spec_;
 };
 
-#if(SIMULATION_THREAD_ENABLED == TRUE) SIMULATION_THREAD_ENABLED
+#if(SIMULATION_THREAD_ENABLED == TRUE) 
 /* ---------------------------------------------------------------------------
  * Simulation thread
  *
