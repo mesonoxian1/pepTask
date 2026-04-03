@@ -6,8 +6,11 @@
 
 LOG_MODULE_REGISTER(read_class, LOG_LEVEL_DBG);
 
-/**
- * @brief Construct a ReadClass and initialise the delayable work item.
+/*!
+ * @brief   Construct a ReadClass bound to a GPIO input abstraction.
+ *
+ * @param   gpio    Reference to a GpioInterface_GpioInput implementation.
+ *                  Must remain valid for the lifetime of this object.
  */
 ReadClass::ReadClass(GpioInterface_GpioInput &gpio) : gpio_{gpio} { 
     // init dwork with workHandler
@@ -15,7 +18,7 @@ ReadClass::ReadClass(GpioInterface_GpioInput &gpio) : gpio_{gpio} {
 }
 
 /**
- * @brief   Initialise the ReadClass and configure the GPIO input.
+ * @brief   Configure the GPIO input and pass the callback for edge-change detection.
  *
  * @return  ERR_TYPE_commonErr_OK on success, ERR_TYPE_commonErr_FAIL on failure.
  */
@@ -34,18 +37,16 @@ ERR_TYPE_commonErr_E ReadClass::init() {
     return ERR_TYPE_commonErr_OK;
 }
 
-/**
+/*!
  * @brief   Static GPIO edge callback — defers processing to the work queue.
  *
- * @details Invoked from work-queue context by the concrete GpioInput
- *          implementation on every edge. Reschedules the debounce timer,
- *          resetting it on rapid successive edges so only the final stable
- *          state is processed. The isHigh parameter is intentionally ignored
- *          here — the actual pin state is read fresh in process() after the
- *          debounce window expires.
+ * @details Reschedules the debounce timer on every edge. Rapid successive
+ *          edges reset the timer so only the final stable state is processed.
+ *          The isHigh parameter is intentionally ignored — the actual pin
+ *          state is read fresh in process() after the debounce window expires.
  *
- * @param ctx     Pointer to the owning ReadClass instance.
- * @param isHigh  Current logical pin state (unused).
+ * @param   ctx     Pointer to the owning ReadClass instance.
+ * @param   isHigh  Current logical pin state (unused).
  */
 void ReadClass::gpioCallback(void *ctx, bool isHigh) {
 
@@ -71,12 +72,13 @@ void ReadClass::workHandler(k_work *work) {
     self->process();
 }
 
-/**
+/*!
  * @brief   Debounce expiry handler — reads pin state and publishes via ZBus.
  *
  * @details Called in work-queue context after the debounce window expires.
- *          Reads the current logical pin state, publishes a ZBusTopics_gpioStateMsg
- *          on gpio_state_chan if the state has changed since the last publish.
+ *          Reads the current logical pin state and publishes a
+ *          ZBusTopics_gpioStateMsg on gpio_state_chan if the state has
+ *          changed since the last publish.
  */
 void ReadClass::process() {
     
@@ -86,9 +88,9 @@ void ReadClass::process() {
         .isHigh = state 
     };
 
-    if (state != lastState_) {
+    if (state != lastState) {
         // store the state for the next state change check
-        lastState_ = state;
+        lastState = state;
     
         LOG_INF("GPIO input: %s", state ? "HIGH" : "LOW");
         // publish the state change

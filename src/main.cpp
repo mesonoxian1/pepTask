@@ -9,8 +9,16 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/zbus/zbus.h>
 
-#define SIMULATION_THREAD_ENABLED   (FALSE)
-
+//! Define as TRUE if you want to use simulation thread
+#define SIMULATION_THREAD_ENABLED   (false)
+/**
+ * @brief   Registers the Zephyr logging module for this translation unit.
+ *
+ * @details Associates all LOG_INF, LOG_ERR, LOG_DBG calls in main.cpp with
+ *          the module name "main". Log lines from this file will appear as
+ *          <inf> main: ... in the output. LOG_LEVEL_INF enables info, warning
+ *          and error messages — debug messages are compiled out.
+ */
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
 /**
@@ -42,9 +50,23 @@ ZBUS_CHAN_DEFINE(
  * Device-tree GPIO specs
  * -------------------------------------------------------------------------- */
 
+ /**
+ * @brief   GPIO spec for the input button resolved from the device tree.
+ *
+ * @details Populated at compile time from the button0 node defined in
+ *          app.overlay. Contains the GPIO device pointer, pin number,
+ *          and flags (GPIO_ACTIVE_LOW | GPIO_PULL_UP).
+ */
 static const gpio_dt_spec btnSpec =
     GPIO_DT_SPEC_GET(DT_NODELABEL(button0), gpios);
 
+/**
+ * @brief   GPIO spec for the output LED resolved from the device tree.
+ *
+ * @details Populated at compile time from the led0 node defined in
+ *          app.overlay. Contains the GPIO device pointer, pin number,
+ *          and flags (GPIO_ACTIVE_HIGH).
+ */
 static const gpio_dt_spec ledSpec =
     GPIO_DT_SPEC_GET(DT_NODELABEL(led0), gpios);
 
@@ -52,16 +74,34 @@ static const gpio_dt_spec ledSpec =
  * POD ISR context — avoids CONTAINER_OF on non-standard-layout ZephyrGpioInput
  * -------------------------------------------------------------------------- */
 
+ /**
+ * @brief   POD ISR context for ZephyrGpioInput.
+ *
+ * @details Standard-layout struct used to bridge the Zephyr C gpio_callback
+ *          API to the C++ ZephyrGpioInput instance. Storing the callback and
+ *          work item here (rather than as class members) avoids
+ *          -Winvalid-offsetof on a non-standard-layout class.
+ *          cbData must be the first member — the kernel stores and returns
+ *          this pointer directly.
+ */
 struct GpioIsrCtx {
-    struct gpio_callback cbData;  /* must be first */
-    void                *self;
-    struct k_work        isrWork;
+    struct gpio_callback cbData;  //!< GPIO callback registered with the kernel
+    void                *self;    //!< Owning ZephyrGpioInput instance           
+    struct k_work        isrWork; //!< Work item submitted from ISR to defer processing
 };
 
 /* ---------------------------------------------------------------------------
  * Concrete Zephyr GPIO implementations
  * -------------------------------------------------------------------------- */
 
+/**
+ * @brief   Zephyr GPIO input implementation of GpioInterface_GpioInput.
+ *
+ * @details Wraps the Zephyr GPIO driver API to configure a physical pin as
+ *          input pull-up with EDGE_BOTH interrupt. Edge events are forwarded
+ *          to the registered GpioInterface_GpioStateCallback via a k_work
+ *          item, safely exiting ISR context before invoking user code.
+ */
 class ZephyrGpioInput : public GpioInterface_GpioInput
 {
 public:
@@ -125,6 +165,12 @@ private:
     }
 };
 
+/**
+ * @brief   Zephyr GPIO output implementation of GpioInterface_GpioOutput.
+ *
+ * @details Wraps the Zephyr GPIO driver API to configure a physical pin as
+ *          push-pull output and drive it to a logical level.
+ */
 class ZephyrGpioOutput : public GpioInterface_GpioOutput
 {
 public:
@@ -155,16 +201,16 @@ private:
     const gpio_dt_spec &spec_;
 };
 
-#if(SIMULATION_THREAD_ENABLED == TRUE) 
-/* ---------------------------------------------------------------------------
- * Simulation thread
+#if(SIMULATION_THREAD_ENABLED == true) 
+ /**
+ * @brief   Simulation thread — drives the emulated GPIO input automatically.
  *
- * gpio_emul_input_set sets RAW electrical level.
- * Button is GPIO_ACTIVE_LOW so:
- *   raw 0 -> logical HIGH (button pressed)
- *   raw 1 -> logical LOW  (button released)
- * -------------------------------------------------------------------------- */
- 
+ * @details Uses gpio_emul_input_set to inject raw electrical levels into the
+ *          emulated GPIO controller, simulating button press and release events.
+ *          Button is GPIO_ACTIVE_LOW so raw 0 = logical HIGH (pressed) and
+ *          raw 1 = logical LOW (released). Runs every 3 seconds alternating
+ *          between press and release to exercise the full application flow.
+ */
 static void simThread(void *, void *, void *)
 {
     k_sleep(K_SECONDS(1));
@@ -190,15 +236,30 @@ K_THREAD_DEFINE(sim_tid, 1024, simThread, NULL, NULL, NULL, 5, 0, 0);
  * Application objects
  * -------------------------------------------------------------------------- */
 
+//! Zephyr GPIO input driver instance bound to the button DT spec.
 static ZephyrGpioInput  gpioIn{btnSpec};
+//! Zephyr GPIO output driver instance bound to the LED DT spec.
 static ZephyrGpioOutput gpioOut{ledSpec};
+//! GPIO input sensing, debounce and ZBus publish.
 static ReadClass        readObj{gpioIn};
+//! LED output control driven by ZBus state change events.
 static ReactClass       reactObj{gpioOut};
 
-//! ZBus listener — defined here so the linker always includes it
+//! Callback function called from listener
 extern "C" void zbusListenerCb(const struct zbus_channel *chan);
+//! ZBus listener — defined here so the linker always includes it
 ZBUS_LISTENER_DEFINE(react_listener, zbusListenerCb);
 
+/**
+ * @brief   Application entry point.
+ *
+ * @details Initialises ReadClass (GPIO input sensing and ZBus publish) and
+ *          ReactClass (LED output control and ZBus observer), then returns.
+ *          Zephyr's scheduler keeps the system alive via the system work queue
+ *          and the simulation thread.
+ *
+ * @return  ERR_TYPE_commonErr_OK on success, ERR_TYPE_commonErr_FAIL on failure.
+ */
 int main(void) {
 
     ERR_TYPE_commonErr_E err = ERR_TYPE_commonErr_OK;

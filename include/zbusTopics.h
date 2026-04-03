@@ -15,7 +15,7 @@ struct ZBusTopics_gpioStateMsg {
     bool isHigh; //!< State of the input pin - TRUE - HIGH, FALSE - LOW
 };
 
-/*!
+/**
  * ZBus channel carrying GpioStateMsg notifications.
  * Published by ReadClass; observed by ReactClass.
  */

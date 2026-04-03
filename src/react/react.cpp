@@ -14,6 +14,11 @@
  *          LOG_LEVEL_DBG enables all log levels including debug messages.
  */
 LOG_MODULE_REGISTER(react_class, LOG_LEVEL_DBG);
+/**
+ * @brief   Defines the ZBus listener observer for the ReactClass.
+ */
+ZBUS_OBS_DECLARE(react_listener);
+
 
 static ReactClass *reactInstance {nullptr};
 
@@ -38,13 +43,11 @@ extern "C" void zbusListenerCb(const struct zbus_channel *chan)
 
 }
 
-/**
- * @brief   Defines the ZBus listener observer for the ReactClass.
- */
-ZBUS_OBS_DECLARE(react_listener);
-
-/**
- * @brief Construct a ReactClass and initialise the delayable work item.
+/*!
+ * @brief   Construct a ReactClass bound to a GPIO output abstraction.
+ *
+ * @param   gpio    Reference to a GpioInterface_GpioOutput implementation.
+ *                  Must remain valid for the lifetime of this object.
  */
 ReactClass::ReactClass(GpioInterface_GpioOutput &gpio) : gpio_{gpio} {
 
@@ -59,7 +62,7 @@ ReactClass::ReactClass(GpioInterface_GpioOutput &gpio) : gpio_{gpio} {
  *          Runtime registration is used to avoid linker iterable section issues when
  *          ZBUS_CHAN_DEFINE and ZBUS_CHAN_ADD_OBS are in different translation units.
  *
- * @return  ERR_TYPES_commonErr_OK on success, ERR_TYPES_commonErr_FAIL on failure.
+ * @return  ERR_TYPE_commonErr_OK on success, ERR_TYPE_commonErr_FAIL on failure.
  */
 ERR_TYPE_commonErr_E ReactClass::init() {
 
@@ -72,12 +75,13 @@ ERR_TYPE_commonErr_E ReactClass::init() {
         LOG_ERR("IGpioOutput::configure failed: %d", ret);
         err = ERR_TYPE_commonErr_FAIL;
     }
-    /*
-     * Register observer at runtime — avoids linker iterable section issues
-     * when ZBUS_CHAN_DEFINE and ZBUS_CHAN_ADD_OBS are in different TUs. 
-     */
-    const int obsRet = zbus_chan_add_obs(&gpio_state_chan, &react_listener, K_NO_WAIT);
+    
     if(err == ERR_TYPE_commonErr_OK) {
+        /*
+         * Register observer at runtime — avoids linker iterable section issues
+         * when ZBUS_CHAN_DEFINE and ZBUS_CHAN_ADD_OBS are in different TUs. 
+         */
+        const int obsRet = zbus_chan_add_obs(&gpio_state_chan, &react_listener, K_NO_WAIT);
         if(obsRet != 0) {
             LOG_ERR("zbus_chan_add_obs failed: %d", obsRet);
             err = ERR_TYPE_commonErr_FAIL;
@@ -122,8 +126,15 @@ void ReactClass::workHandler(k_work *work) {
     self->process();
 }
 
+/*!
+ * @brief   LED finite-state sequencer executed in work-queue context.
+ *
+ * @details Drives the LED based on currentState_:
+ *          - HIGH: blinks 3 times with kBlinkPeriodMs between each toggle.
+ *          - LOW:  turns LED on for kLowOnMs then off.
+ *          Reschedules itself via dwork_ until the sequence completes.
+ */
 void ReactClass::process() {
-
 
     // in case GPIO is set to HIGH - blink the LED 3 times with 100ms between each blink
     if(currentState_ == true) {
