@@ -13,8 +13,9 @@ LOG_MODULE_REGISTER(read_class, LOG_LEVEL_DBG);
  *                  Must remain valid for the lifetime of this object.
  */
 ReadClass::ReadClass(GpioInterface_GpioInput &gpio) : gpio_{gpio} { 
-    // init dwork with workHandler
-     k_work_init_delayable(&dwork_, workHandler);
+    
+    // init dwork with workHandler - work handler will be called after reschedule is intiated
+    k_work_init_delayable(&dwork_, workHandler);
 }
 
 /**
@@ -24,17 +25,19 @@ ReadClass::ReadClass(GpioInterface_GpioInput &gpio) : gpio_{gpio} {
  */
 ERR_TYPE_commonErr_E ReadClass::init() {
 
+    ERR_TYPE_commonErr_E err = ERR_TYPE_commonErr_OK;
+   
     GpioInterface_GpioStateCallback cb{};
     cb.func = &ReadClass::gpioCallback;
     cb.ctx  = this;
 
-    const int ret = gpio_.configure(cb);
+    err = gpio_.configure(cb);
 
-    if (ret != 0) {
-        LOG_ERR("IGpioInput::configure failed: %d", ret);
+    if(err != ERR_TYPE_commonErr_OK) {
+        LOG_ERR("IGpioInput::configure failed: %d", err);
     }
 
-    return ERR_TYPE_commonErr_OK;
+    return err;
 }
 
 /*!
@@ -88,7 +91,7 @@ void ReadClass::process() {
         .isHigh = state 
     };
 
-    if (state != lastState) {
+    if(state != lastState) {
         // store the state for the next state change check
         lastState = state;
     
@@ -98,7 +101,7 @@ void ReadClass::process() {
         
         LOG_INF("zbus_chan_pub ret = %d, isHigh = %d", ret, state);
         
-        if (ret != 0) {
+        if(ret != 0) {
             LOG_ERR("zbus_chan_pub failed: %d", ret);
         }
     }
