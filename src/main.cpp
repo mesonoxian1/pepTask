@@ -9,7 +9,7 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/zbus/zbus.h>
 
-#define SIMULATION_THREAD_ENABLED   (TRUE)
+#define SIMULATION_THREAD_ENABLED   (FALSE)
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
