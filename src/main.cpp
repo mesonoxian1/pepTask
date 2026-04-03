@@ -9,6 +9,9 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/zbus/zbus.h>
 
+#define SIMULATION_THREAD_ENABLED   (FALSE)
+
+
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
 
 /**
@@ -35,7 +38,6 @@ ZBUS_CHAN_DEFINE(
     ZBUS_OBSERVERS_EMPTY,
     ZBUS_MSG_INIT(.isHigh = false)
 );
-
 
 /* ---------------------------------------------------------------------------
  * Device-tree GPIO specs
@@ -135,7 +137,7 @@ public:
     {
         ERR_TYPE_commonErr_E err = ERR_TYPE_commonErr_OK;
 
-        if (!device_is_ready(spec_.port)) {
+        if(device_is_ready(spec_.port) == false) {
             LOG_ERR("GPIO output device not ready");
             err = ERR_TYPE_commonErr_FAIL;
         }
@@ -154,7 +156,7 @@ private:
     const gpio_dt_spec &spec_;
 };
 
-
+#if(SIMULATION_THREAD_ENABLED == TRUE) SIMULATION_THREAD_ENABLED
 /* ---------------------------------------------------------------------------
  * Simulation thread
  *
@@ -183,6 +185,7 @@ static void simThread(void *, void *, void *)
 }
  
 K_THREAD_DEFINE(sim_tid, 1024, simThread, NULL, NULL, NULL, 5, 0, 0);
+#endif
 
 /* ---------------------------------------------------------------------------
  * Application objects
