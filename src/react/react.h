@@ -10,8 +10,8 @@
  */
 
  #define LED_BLINK_PERIOD_MS    (100) //!< LED blink interval in ms
- #define LED_ON_IN_LOW_STATE_MS (500) //!< Time that LED will stay turner ON if input is lopw
- #define LED_TOGGLE_COUNT       (6u)  //!< How many times will the LED blink? Define as times wanted * 2
+ #define LED_ON_IN_LOW_STATE_MS (500) //!< Time that LED will stay turner ON if input is low
+ #define LED_TOGGLE_COUNT       (6u)  //!< Total LED toggle count for a 3-blink sequence (blinks wanted x 2)
 
 
 //! LED state enumeration
