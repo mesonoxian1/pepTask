@@ -10,7 +10,6 @@ target_sources(app PRIVATE
         src/main.cpp 
         src/read/read.cpp 
         src/react/react.cpp
-        hal/gpioZephyr.cpp
         )
         
 # Header files
@@ -18,5 +17,4 @@ target_include_directories(app PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/read  
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src/react 
-        ${CMAKE_CURRENT_SOURCE_DIR}/hal 
         )
