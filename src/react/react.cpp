@@ -15,12 +15,12 @@
  */
 LOG_MODULE_REGISTER(react_class, LOG_LEVEL_DBG);
 /**
- * @brief   Defines the ZBus listener observer for the ReactClass.
+ * @brief   Declares the ZBus listener observer for the ReactClass.
  */
 ZBUS_OBS_DECLARE(react_listener);
 
 
-static ReactClass *reactInstance {nullptr};
+static ReactClass *reactInstance{nullptr};
 
 /**
  * @brief   ZBus listener callback invoked by the VDED dispatcher on channel publish.
@@ -31,16 +31,15 @@ static ReactClass *reactInstance {nullptr};
  *
  * @param chan  Pointer to the ZBus channel that was published to.
  */
-extern "C" void zbusListenerCb(const struct zbus_channel *chan)
-{
-    if (reactInstance != nullptr) {
+extern "C" void zbusListenerCb(const struct zbus_channel *chan) {
+
+    if(reactInstance != nullptr) {
         const ZBusTopics_gpioStateMsg *msg =
             static_cast<const ZBusTopics_gpioStateMsg *>(zbus_chan_const_msg(chan));
     
         LOG_INF("ZBus received: isHigh = %d", msg->isHigh);
         reactInstance->zbusMsgEventHandler(msg->isHigh);
     }
-
 }
 
 /*!
@@ -51,6 +50,7 @@ extern "C" void zbusListenerCb(const struct zbus_channel *chan)
  */
 ReactClass::ReactClass(GpioInterface_GpioOutput &gpio) : gpio_{gpio} {
 
+    // assign workHandler to be called on zbus event 
     k_work_init_delayable(&dwork_, workHandler);
 }
 
@@ -69,11 +69,10 @@ ERR_TYPE_commonErr_E ReactClass::init() {
     reactInstance = this;
     ERR_TYPE_commonErr_E err = ERR_TYPE_commonErr_OK;
 
-    const int ret = gpio_.configure();
+    err = gpio_.configure();
 
-    if(ret != 0) {
-        LOG_ERR("IGpioOutput::configure failed: %d", ret);
-        err = ERR_TYPE_commonErr_FAIL;
+    if(err != ERR_TYPE_commonErr_OK) {
+        LOG_ERR("IGpioOutput::configure failed: %d", err);
     }
     
     if(err == ERR_TYPE_commonErr_OK) {
@@ -82,6 +81,7 @@ ERR_TYPE_commonErr_E ReactClass::init() {
          * when ZBUS_CHAN_DEFINE and ZBUS_CHAN_ADD_OBS are in different TUs. 
          */
         const int obsRet = zbus_chan_add_obs(&gpio_state_chan, &react_listener, K_NO_WAIT);
+       
         if(obsRet != 0) {
             LOG_ERR("zbus_chan_add_obs failed: %d", obsRet);
             err = ERR_TYPE_commonErr_FAIL;

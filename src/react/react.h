@@ -11,7 +11,7 @@
 
  #define LED_BLINK_PERIOD_MS    (100) //!< LED blink interval in ms
  #define LED_ON_IN_LOW_STATE_MS (500) //!< Time that LED will stay turner ON if input is low
- #define LED_TOGGLE_COUNT       (6u)  //!< Total LED toggle count for a 3-blink sequence (blinks wanted x 2)
+ #define LED_TOGGLE_COUNT       (6)   //!< Total LED toggle count for a 3-blink sequence (blinks wanted x 2)
 
 
 //! LED state enumeration
@@ -20,6 +20,7 @@ typedef enum REACT_ledState_ENUM {
     REACT_ledState_ON,      //!< LED state ON
 } REACT_ledState_E;
 
+//! ReactClass body
 class ReactClass
 {
 public:
@@ -27,19 +28,27 @@ public:
     ERR_TYPE_commonErr_E init();
     void zbusMsgEventHandler(bool isHigh);
 #ifdef UNIT_TEST
-    void drainWorkForTest() { drainDelayable(&dwork_); }
+   /*!
+     * @brief   Test helper — immediately fires the pending work item.
+     *
+     * @details Exposes the internal k_work_delayable for unit tests without
+     *          making it public in production builds.
+     */
+    void drainWorkForTest() { 
+        drainDelayable(&dwork_); 
+    }
 #endif
 
 private:
-    static constexpr int32_t kBlinkPeriodMs{LED_BLINK_PERIOD_MS};
-    static constexpr int32_t kLowOnMs{LED_ON_IN_LOW_STATE_MS};
-    static constexpr int     kBlinkToggleCount{LED_TOGGLE_COUNT};
+    static constexpr int32_t kBlinkPeriodMs{LED_BLINK_PERIOD_MS};   //!< LED toggle interval (ms)
+    static constexpr int32_t kLowOnMs{LED_ON_IN_LOW_STATE_MS};      //!< Low-state LED on duration (ms)
+    static constexpr int     kBlinkToggleCount{LED_TOGGLE_COUNT};   //!< Total toggles for blink sequence
 
-    GpioInterface_GpioOutput &gpio_;
-    k_work_delayable dwork_;
-    bool             currentState_{false};
-    REACT_ledState_E previousLedState{REACT_ledState_OFF};
-    int              blinkCount_{0};
+    GpioInterface_GpioOutput &gpio_;                        //!< GPIO output abstraction
+    k_work_delayable dwork_;                                //!< Delayable work item for LED sequencing
+    bool             currentState_{false};                  //!< Currently applied GPIO logical state
+    REACT_ledState_E previousLedState{REACT_ledState_OFF};  //!< Previously applied LED state 
+    int              blinkCount_{0};                        //!< Remaining toggle count in current sequence
 
     static void workHandler(k_work *work);
     void        process();

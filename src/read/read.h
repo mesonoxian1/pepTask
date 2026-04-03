@@ -9,7 +9,7 @@
  * @brief ReadClass — GPIO input sensing with debounce and ZBus publish.
  */
 
-#define DEBOUNCE_TOUT_MS    (20) //!< Debounce timeout for the button in ms
+#define DEBOUNCE_TOUT_MS    (100) //!< Debounce timeout for the button in ms
 
 class ReadClass
 {
