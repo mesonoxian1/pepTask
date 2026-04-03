@@ -26,6 +26,9 @@ public:
     explicit ReactClass(GpioInterface_GpioOutput &gpio);
     ERR_TYPE_commonErr_E init();
     void zbusMsgEventHandler(bool isHigh);
+#ifdef UNIT_TEST
+    void drainWorkForTest() { drainDelayable(&dwork_); }
+#endif
 
 private:
     static constexpr int32_t kBlinkPeriodMs{LED_BLINK_PERIOD_MS};

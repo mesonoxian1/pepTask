@@ -86,3 +86,6 @@ zephyr-sdk/
 # =========================
 .DS_Store
 Thumbs.db
+
+# gtest
+"*.endpointdlp"
